@@ -1,0 +1,161 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>D3.js(Force Layout)の練習</title>
+  <style>
+    svg{
+      float: left;
+      margin_right: 2em;
+    }
+  </style>
+</head>
+<body>
+
+  <script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
+
+  <svg width=800 height=800></svg>
+  <div>
+    <button class="start button" id="start_button" onclick="read_chat()">スタート</button>
+  </div>
+
+
+<!-- ここで、raw_to_data.ipynbで出力したデータを読み込む -->
+  <script src="channel_0.json" charset="utf-8"></script>
+
+  <script>
+    var w = 800;
+    var h = 600;
+    var time = 0;
+    const TIME_OUT = 2000;
+
+    var nodes = JSON.parse(node)
+    var links = JSON.parse(link)
+    var chats = JSON.parse(chat)
+
+
+    var force = d3.layout.force()
+                 .nodes(nodes)
+                 .links(links)
+                 .size([w, h])
+                 .linkStrength(0.1)
+                 .friction(0.9)
+                 .distance(100)
+                 .charge(-150)
+                 .gravity(0.1)
+                 .theta(3)
+                 .alpha(0.1)
+                 .start();
+
+    //var svg = d3.select("body").append("svg").attr({width:w, height:h});
+    var svg = d3.select("svg");
+
+
+    var link = svg.selectAll("line")
+                  .data(links)
+                  .enter()                      //ただのgetterメソッド
+                  .append("line")
+                  .attr({id: function(d){
+                    return d.source.id + "_" + d.target.id
+                  }})
+                  .style({stroke: "#ccc",
+                          "stroke-width": 1});
+
+    var node = svg.selectAll("circle")
+                  .data(nodes)    //nodesデータにバインド
+                  .enter()        //
+                  .append("circle")
+                  .attr({r: 5,
+                         opacity: 0.5,
+                         id: function(d) { return d.id }
+                       })
+                  .style({fill: "red"}); //赤色に塗る
+                  //.call(force.drag);  //force.drag(node)の呼び出し
+
+                  //力学計算が行われるたびに呼ばれるtickイベント
+                  force.on("tick", function() {
+                    link.attr({x1: function(d) { return d.source.x; },
+                               y1: function(d) { return d.source.y; },
+                               x2: function(d) { return d.target.x; },
+                               y2: function(d) { return d.target.y; }});
+                    node.attr({cx: function(d) { return d.x; },
+                               cy: function(d) { return d.y; }});
+                  });
+
+
+    function read_chat(){
+      console.log("order:" + time);
+      var effect_array_node = [];
+      var effect_array_link = [];
+      //現timeの発言を取り出す
+      for(var i = 0; i < chats.length; i++){
+        if(time == chats[i].order){
+          console.log("from_id:" + chats[i].from_id + ", to_id:" + chats[i].to_id);
+          if(chats[i].to_id == -1) {
+            effect_array_node.push(chats[i].from_id);
+          } else {
+            effect_array_link.push([chats[i].from_id, chats[i].to_id]);
+          }
+        }
+      }
+
+      //effect_arrayの各要素について効果
+      for(var i = 0; i < nodes.length; i++){
+        var element = document.getElementById(i);
+        if(effect_array_node.indexOf(i) < 0){
+          element.setAttribute("r", "5");
+        }else{
+          element.setAttribute("r", "10");
+        }
+      }
+
+      effect_array_link.forEach(function(effect_link) {
+        var search = links.findIndex((element, index, array) => {
+          return (element.source.id == effect_link[0]) && (element.target.id == effect_link[1]);
+        });
+
+        if(search !== -1){
+          console.log(links[search].source.y);
+          var x_1 = links[search].source.x;
+          var y_1 = links[search].source.y;
+          var x_2 = links[search].target.x;
+          var y_2 = links[search].target.y;
+
+          var effect = svg.append("line")
+                          .attr('x1', x_1)
+                          .attr('y1', y_1)
+                          .attr('x2', x_1)
+                          .attr('y2', y_1)
+                          .style({stroke: "blue",
+                                  "stroke-width": 3})
+                          .transition()
+                            .duration(1000)
+                            .attr('x1', x_1)
+                            .attr('y1', y_1)
+                            .attr('x2', x_2)
+                            .attr('y2', y_2)
+                            .transition()
+                              .duration(1000)
+                              .attr('x1', x_2)
+                              .attr('y1', y_2)
+                              .attr('x2', x_2)
+                              .attr('y2', y_2);
+
+        }
+      });
+
+      time++;
+      if(time < chats[chats.length - 1].order){
+        var id = setTimeout(read_chat, TIME_OUT);
+      }
+    }
+
+
+    //メインループ
+    //read_chat();
+
+
+  </script>
+
+</body>
+</html>
