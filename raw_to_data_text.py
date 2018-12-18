@@ -3,10 +3,10 @@ import re
 import json
 
 # 読み込むファイルを変えるときはここを変える
-data_path = 'raw_data/channels_4.csv'
+data_path = 'raw_data/channels_0.csv'
 
 # でてくるファイル名を変えるときはここを変える
-output_json = 'channel_4_text.json'
+output_json = 'channel_0_text.json'
 
 # 1.raw_dataの読み込み
 raw = pd.read_csv(data_path, encoding='utf_8')
